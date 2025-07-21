@@ -130,7 +130,13 @@ class ExcelScanner:
                 self.load_with_pandas()
             return str(self.df.iat[row - 1, col - 1]) if pd.notna(self.df.iat[row - 1, col - 1]) else ""
 
-    def get_keyword_cell(self, keyword: str, exact_match: bool = True) -> List[Tuple[int, int]]:
+    def get_keyword_cell(
+            self,
+            keyword: str,
+            exact_match: bool = True,
+            end_row: Optional[int] = None,
+            end_col: Optional[int] = None
+    ) -> List[Tuple[int, int]]:
         """Find all cells containing the keyword (exact or partial match).
 
         Performs case-insensitive search after normalizing both the
@@ -140,24 +146,32 @@ class ExcelScanner:
             keyword: The search term to find.
             exact_match: If True, looks for exact matches only. If False,
                 looks for partial matches (cell contains keyword).
+            end_row: Last row to search (1-based). If None, searches all rows.
+            end_col: Last column to search (1-based). If None, searches all columns.
 
         Returns:
             List of (row, col) tuples where keyword was found.
 
         Example:
-            scanner.get_keyword_cell("Total")
+            scanner.get_keyword_cell("Total", end_row=10, end_col=5)
             [(1, 3), (5, 2)]  # Found at row 1 col 3 and row 5 col 2
         """
-
         if self.df is None:
             self.load_with_pandas()
+
+        # Convert 1-based to 0-based and handle None
+        row_slice = slice(None, end_row) if end_row is None else slice(None, end_row - 1)
+        col_slice = slice(None, end_col) if end_col is None else slice(None, end_col - 1)
+
+        # Get the subset of dataframe to search
+        search_area = self.df.iloc[row_slice, col_slice]
 
         norm_keyword = normalize_text(str(keyword))
 
         if exact_match:
-            matches = self.df.map(lambda x: normalize_text(str(x)) == norm_keyword)
+            matches = search_area.map(lambda x: normalize_text(str(x)) == norm_keyword)
         else:
-            matches = self.df.map(lambda x: norm_keyword in normalize_text(str(x)))
+            matches = search_area.map(lambda x: norm_keyword in normalize_text(str(x)))
 
         rows, cols = matches.to_numpy().nonzero()
         return [(int(row + 1), int(col + 1)) for row, col in zip(rows, cols)]

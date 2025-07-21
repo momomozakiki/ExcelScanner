@@ -13,10 +13,10 @@ read_quotation = ExcelScanner(dummy_quotation)
 print(read_excel.load_with_pandas())
 
 
-keyword = 'Bill to'
+keyword = 's/n'
 
 get_info = read_excel.get_cell_info
-keyword_cell = read_excel.get_keyword_cell(keyword, exact_match=False)
+keyword_cell = read_excel.get_keyword_cell_v2(keyword, exact_match=False, end_col=3)
 print(keyword_cell)
 
 for row, col in keyword_cell:
