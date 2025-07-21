@@ -1,10 +1,17 @@
-from urllib.parse import uses_query
+
 
 from excel_scanner import ExcelScanner
 
-dummy_info = r"C:\Users\kbsim\Desktop\dummy info.xlsx"
-dummy_invoice = r"C:\Users\ST-Service\Desktop\SIM\Excel Reader\sample file\Copy of IN32097_NMB SINGAPORE LIMITED_16DEC2024.xlsx"
-dummy_quotation = r"C:\Users\ST-Service\Desktop\SIM\Excel Reader\sample file\ST-2025-03-002_SERVICE(FISCHER BELL PRIVATE LTD).xlsx"
+from pathlib import Path
+
+# Define paths relative to your project root
+PROJECT_ROOT = Path(__file__).parent.parent  # Adjust based on your script's location
+DUMMY_FILES_DIR = PROJECT_ROOT / "dummy_file"
+
+dummy_invoice = DUMMY_FILES_DIR / "Copy of IN32097_NMB SINGAPORE LIMITED_16DEC2024.xlsx"
+dummy_quotation = DUMMY_FILES_DIR / "ST-2025-03-002_SERVICE(FISCHER BELL PRIVATE LTD).xlsx"
+
+# dummy_info = r"C:\Users\kbsim\Desktop\dummy info.xlsx"
 
 read_excel = ExcelScanner(dummy_quotation)
 read_invoice = ExcelScanner(dummy_invoice)
@@ -16,7 +23,7 @@ print(read_excel.load_with_pandas())
 keyword = 's/n'
 
 get_info = read_excel.get_cell_info
-keyword_cell = read_excel.get_keyword_cell_v2(keyword, exact_match=False, end_col=3)
+keyword_cell = read_excel.get_keyword_cell(keyword, exact_match=False, end_col=3)
 print(keyword_cell)
 
 for row, col in keyword_cell:

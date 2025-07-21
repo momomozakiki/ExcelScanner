@@ -3,24 +3,25 @@ from openpyxl import load_workbook
 from .core import normalize_text
 from .exceptions import ExcelScannerError
 from typing import Optional, Union, List, Tuple
+from pathlib import Path
 
 
 class ExcelScanner:
     """A scanner for Excel files that supports both Pandas (fast bulk operations)
     and OpenPyXL (formula/formatting access)."""
 
-    def __init__(self, filepath: str) -> None:
+    def __init__(self, filepath: Union[str, Path]) -> None:  # <-- Accepts both str and Path
         """Initialize the Excel scanner with a file path.
 
         Args:
             filepath: Path to the Excel file (.xlsx, .xls).
 
         Attributes:
-            df (pd.DataFrame): Loaded DataFrame (Pandas mode).
-            wb (Workbook): OpenPyXL workbook object.
-            ws (Worksheet): Active worksheet (OpenPyXL mode).
+            self.df (pd.DataFrame): Loaded DataFrame (Pandas mode).
+            self.wb (Workbook): OpenPyXL workbook object.
+            self.ws (Worksheet): Active worksheet (OpenPyXL mode).
         """
-        self.filepath = filepath
+        self.filepath = str(filepath)
         self.df = None  # Private with type hint
         self.wb = None
         self.ws = None
