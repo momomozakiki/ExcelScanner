@@ -21,7 +21,7 @@ class ExcelScanner:
             self.wb (Workbook): OpenPyXL workbook object.
             self.ws (Worksheet): Active worksheet (OpenPyXL mode).
         """
-        self.filepath = str(filepath)
+        self.filepath = str(filepath) # type str will backward compatibility with older python path library
         self.df = None  # Private with type hint
         self.wb = None
         self.ws = None
