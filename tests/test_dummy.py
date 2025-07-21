@@ -3,16 +3,17 @@ from urllib.parse import uses_query
 from excel_scanner import ExcelScanner
 
 dummy_info = r"C:\Users\kbsim\Desktop\dummy info.xlsx"
+dummy_invoice = r"C:\Users\ST-Service\Desktop\SIM\Excel Reader\sample file\Copy of IN32097_NMB SINGAPORE LIMITED_16DEC2024.xlsx"
 
-read_excel = ExcelScanner(dummy_info)
+read_excel = ExcelScanner(dummy_invoice)
 
 print(read_excel.load_with_pandas())
 
 
-keyword = '-61'
+keyword = 's/n'
 
 get_info = read_excel.get_cell_info
-keyword_cell = read_excel.get_keyword_cell(keyword)
+keyword_cell = read_excel.get_keyword_cell_v2(keyword, exact_match=False)
 print(keyword_cell)
 
 for row, col in keyword_cell:
