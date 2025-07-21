@@ -130,31 +130,7 @@ class ExcelScanner:
                 self.load_with_pandas()
             return str(self.df.iat[row - 1, col - 1]) if pd.notna(self.df.iat[row - 1, col - 1]) else ""
 
-    def get_keyword_cell(self, keyword: str) -> List[Tuple[int, int]]:
-        """Find all cells containing the exact normalized keyword match.
-
-        Performs case-insensitive search after normalizing both the
-        keyword and cell contents. Returns 1-based coordinates.
-
-        Args:
-            keyword: The search term to find.
-
-        Returns:
-            List of (row, col) tuples where keyword was found.
-
-        Example:
-            scanner.get_keyword_cell("Total")
-            [(1, 3), (5, 2)]  # Found at row 1 col 3 and row 5 col 2
-        """
-        if self.df is None:
-            self.load_with_pandas()
-
-        norm_keyword = normalize_text(str(keyword))
-        matches = self.df.map(lambda x: normalize_text(str(x)) == norm_keyword)
-        rows, cols = matches.to_numpy().nonzero()
-        return [(int(row + 1), int(col + 1)) for row, col in zip(rows, cols)]
-
-    def get_keyword_cell_v2(self, keyword: str, exact_match: bool = True) -> List[Tuple[int, int]]:
+    def get_keyword_cell(self, keyword: str, exact_match: bool = True) -> List[Tuple[int, int]]:
         """Find all cells containing the keyword (exact or partial match).
 
         Performs case-insensitive search after normalizing both the
@@ -172,6 +148,7 @@ class ExcelScanner:
             scanner.get_keyword_cell("Total")
             [(1, 3), (5, 2)]  # Found at row 1 col 3 and row 5 col 2
         """
+
         if self.df is None:
             self.load_with_pandas()
 
