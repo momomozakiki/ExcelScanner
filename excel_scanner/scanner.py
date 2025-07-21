@@ -176,3 +176,343 @@ class ExcelScanner:
 
         rows, cols = matches.to_numpy().nonzero()
         return [(int(row + 1), int(col + 1)) for row, col in zip(rows, cols)]
+
+    def find_consensus_row(
+            self,
+            keywords: set[str],
+            exact_match: bool = True,
+            end_row: Optional[int] = None,
+            end_col: Optional[int] = None
+    ) -> Optional[int]:
+        """Find the single row where ALL keywords appear.
+
+        Args:
+            keywords: Set of keywords. For accurate results, provide 2+ keywords.
+            exact_match: If True, requires exact matches.
+            end_row: Limit row search range.
+            end_col: Limit col search range.
+
+        Returns:
+            int: Common row number if all keywords share exactly one row.
+            None: If any keyword has no matches.
+
+        Raises:
+            ValueError: With specific guidance when:
+                - Single keyword matches multiple rows (suggests adding more keywords)
+                - Keywords don't share any row
+                - Keywords share multiple rows
+        """
+        if not keywords:
+            return None
+
+        # Step 1: Get all rows for each keyword
+        keyword_to_rows = {}
+        for keyword in keywords:
+            positions = self.get_keyword_cell(keyword, exact_match, end_row, end_col)
+            if not positions:
+                return None
+            keyword_to_rows[keyword] = {pos[0] for pos in positions}
+
+        # Step 2: Special case - single keyword with multiple matches
+        if len(keywords) == 1 and len(next(iter(keyword_to_rows.values()))) > 1:
+            keyword = next(iter(keywords))
+            matched_rows = keyword_to_rows[keyword]
+            raise ValueError(
+                f"Keyword '{keyword}' appears in multiple rows: {matched_rows}. "
+                f"Please provide 1-2 additional keywords to identify the correct row.\n"
+                f"Example: scanner.find_consensus_row({{{keyword!r}, 'AdditionalKeyword1', 'AdditionalKeyword2'}})"
+            )
+
+        # Step 3: Multi-keyword validation
+        common_rows = set.intersection(*keyword_to_rows.values())
+
+        if not common_rows:
+            all_matches = {k: v for k, v in keyword_to_rows.items()}
+            raise ValueError(
+                f"No common row found. Keywords appear in different rows: {all_matches}\n"
+                f"Suggestions:\n"
+                f"1. Verify keyword spelling\n"
+                f"2. Add more specific keywords\n"
+                f"3. Adjust search range (end_row/end_col)"
+            )
+        elif len(common_rows) > 1:
+            raise ValueError(
+                f"Keywords appear in multiple shared rows: {common_rows}\n"
+                f"Try narrowing the search with:\n"
+                f"1. More specific keywords\n"
+                f"2. Smaller end_row/end_col range"
+            )
+
+        return common_rows.pop()
+
+    def find_consensus_col(
+            self,
+            keywords: set[str],
+            exact_match: bool = True,
+            end_row: Optional[int] = None,
+            end_col: Optional[int] = None
+    ) -> Optional[int]:
+        """Find the single column where ALL keywords appear.
+
+        Args:
+            keywords: Set of keywords. For accurate results, provide 2+ keywords.
+            exact_match: If True, requires exact matches.
+            end_row: Limit row search range.
+            end_col: Limit col search range.
+
+        Returns:
+            int: Common column number if all keywords share exactly one column.
+            None: If any keyword has no matches.
+
+        Raises:
+            ValueError: With specific guidance when:
+                - Single keyword matches multiple columns (suggests adding more keywords)
+                - Keywords don't share any column
+                - Keywords share multiple columns
+        """
+        if not keywords:
+            return None
+
+        # Step 1: Get all columns for each keyword
+        keyword_to_cols = {}
+        for keyword in keywords:
+            positions = self.get_keyword_cell(keyword, exact_match, end_row, end_col)
+            if not positions:
+                return None
+            keyword_to_cols[keyword] = {pos[1] for pos in positions}
+
+        # Step 2: Special case - single keyword with multiple matches
+        if len(keywords) == 1 and len(next(iter(keyword_to_cols.values()))) > 1:
+            keyword = next(iter(keywords))
+            matched_cols = keyword_to_cols[keyword]
+            raise ValueError(
+                f"Keyword '{keyword}' appears in multiple columns: {matched_cols}. "
+                f"Please provide 1-2 additional keywords to identify the correct column.\n"
+                f"Example: scanner.find_consensus_col({{{keyword!r}, 'AdditionalKeyword1', 'AdditionalKeyword2'}})"
+            )
+
+        # Step 3: Multi-keyword validation
+        common_cols = set.intersection(*keyword_to_cols.values())
+
+        if not common_cols:
+            all_matches = {k: v for k, v in keyword_to_cols.items()}
+            raise ValueError(
+                f"No common column found. Keywords appear in different columns: {all_matches}\n"
+                f"Suggestions:\n"
+                f"1. Verify keyword spelling\n"
+                f"2. Add more specific keywords\n"
+                f"3. Adjust search range (end_row/end_col)"
+            )
+        elif len(common_cols) > 1:
+            raise ValueError(
+                f"Keywords appear in multiple shared columns: {common_cols}\n"
+                f"Try narrowing the search with:\n"
+                f"1. More specific keywords\n"
+                f"2. Smaller end_row/end_col range"
+            )
+
+        return common_cols.pop()
+
+''' V2
+    def find_consensus_row(
+            self,
+            keywords: set[str],
+            exact_match: bool = True,
+            end_row: Optional[int] = None,
+            end_col: Optional[int] = None
+    ) -> Optional[int]:
+        """Find the single row where ALL keywords appear (may be in different columns).
+
+        For multiple keywords (2+), ALL must share at least one common row.
+
+        Args:
+            keywords: Set of keywords (e.g., {"Product", "Brand"}).
+            exact_match: If True, requires exact matches.
+            end_row/end_col: Limit search range.
+
+        Returns:
+            int: Common row number if all keywords share at least one row.
+            None: If any keyword has no matches.
+
+        Raises:
+            ValueError: If keywords don't share any row or disagree.
+        """
+        if not keywords:
+            return None
+
+        # Step 1: Get all rows for each keyword
+        keyword_to_rows = {}
+        for keyword in keywords:
+            positions = self.get_keyword_cell(
+                keyword=keyword,
+                exact_match=exact_match,
+                end_row=end_row,
+                end_col=end_col
+            )
+            if not positions:
+                return None  # Early exit if any keyword is missing
+            keyword_to_rows[keyword] = {pos[0] for pos in positions}
+
+        # Step 2: Find intersection of all rows
+        common_rows = set.intersection(*keyword_to_rows.values())
+
+        if not common_rows:
+            raise ValueError(
+                f"No common row found. Keywords appear in different rows: "
+                f"{ {k: v for k, v in keyword_to_rows.items()} }"
+            )
+        elif len(common_rows) > 1:
+            raise ValueError(
+                f"Keywords appear in multiple shared rows: {common_rows}. "
+                f"Expected exactly one common row."
+            )
+
+        return common_rows.pop()
+
+    def find_consensus_col(
+            self,
+            keywords: set[str],
+            exact_match: bool = True,
+            end_row: Optional[int] = None,
+            end_col: Optional[int] = None
+    ) -> Optional[int]:
+        """Find the single column where ALL keywords appear (may be in different rows).
+
+        For multiple keywords (2+), ALL must share at least one common column.
+
+        Args:
+            keywords: Set of keywords (e.g., {"Total", "Subtotal"}).
+            exact_match: If True, requires exact matches.
+            end_row/end_col: Limit search range.
+
+        Returns:
+            int: Common column number if all keywords share at least one column.
+            None: If any keyword has no matches.
+
+        Raises:
+            ValueError: If keywords don't share any column or disagree.
+        """
+        if not keywords:
+            return None
+
+        # Step 1: Get all columns for each keyword
+        keyword_to_cols = {}
+        for keyword in keywords:
+            positions = self.get_keyword_cell(
+                keyword=keyword,
+                exact_match=exact_match,
+                end_row=end_row,
+                end_col=end_col
+            )
+            if not positions:
+                return None  # Early exit if any keyword is missing
+            keyword_to_cols[keyword] = {pos[1] for pos in positions}
+
+        # Step 2: Find intersection of all columns
+        common_cols = set.intersection(*keyword_to_cols.values())
+
+        if not common_cols:
+            raise ValueError(
+                f"No common column found. Keywords appear in different columns: "
+                f"{ {k: v for k, v in keyword_to_cols.items()} }"
+            )
+        elif len(common_cols) > 1:
+            raise ValueError(
+                f"Keywords appear in multiple shared columns: {common_cols}. "
+                f"Expected exactly one common column."
+            )
+
+        return common_cols.pop()
+'''
+
+
+
+'''
+    def find_consensus_row(
+            self,
+            keywords: set[str],
+            exact_match: bool = True,
+            end_row: Optional[int] = None,
+            end_col: Optional[int] = None
+    ) -> Optional[int]:
+        """Find the single row where ALL keywords appear (may be in different columns).
+
+        Args:
+            keywords: Set of keywords (e.g., {"Product", "Brand"}).
+            exact_match: If True, requires exact matches.
+            end_row/end_col: Limit search range.
+
+        Returns:
+            int: Common row number (e.g., 25) if all keywords share it.
+            None: If no consensus or no matches.
+
+        Raises:
+            ValueError: If keywords appear in different rows.
+        """
+        if not keywords:
+            return None
+
+        # Step 1: Get all (row, col) positions for each keyword
+        keyword_rows = set()
+        for keyword in keywords:
+            positions = self.get_keyword_cell(
+                keyword=keyword,
+                exact_match=exact_match,
+                end_row=end_row,
+                end_col=end_col
+            )
+            if not positions:
+                return None  # At least one keyword has no matches
+            keyword_rows.update({pos[0] for pos in positions})
+
+        # Step 2: Check if all keywords share a single row
+        if len(keyword_rows) == 1:
+            return keyword_rows.pop()
+        else:
+            raise ValueError(f"Keywords disagree on rows: {keyword_rows}")
+
+
+    def find_consensus_col(
+            self,
+            keywords: set[str],
+            exact_match: bool = True,
+            end_row: Optional[int] = None,
+            end_col: Optional[int] = None
+    ) -> Optional[int]:
+        """Find the single column where ALL keywords appear (may be in different rows).
+
+        Args:
+            keywords: Set of keywords (e.g., {"Total", "Subtotal"}).
+            exact_match: If True, requires exact matches.
+            end_row/end_col: Limit search range.
+
+        Returns:
+            int: Common column number (e.g., 17) if all keywords share it.
+            None: If no consensus or no matches.
+
+        Raises:
+            ValueError: If keywords appear in different columns.
+        """
+        if not keywords:
+            return None
+
+        # Step 1: Get all (row, col) positions for each keyword
+        keyword_cols = set()
+        for keyword in keywords:
+            positions = self.get_keyword_cell(
+                keyword=keyword,
+                exact_match=exact_match,
+                end_row=end_row,
+                end_col=end_col
+            )
+            if not positions:
+                return None  # At least one keyword has no matches
+            keyword_cols.update({pos[1] for pos in positions})
+
+        # Step 2: Check if all keywords share a single column
+        if len(keyword_cols) == 1:
+            return keyword_cols.pop()
+        else:
+            raise ValueError(f"Keywords disagree on columns: {keyword_cols}")
+
+'''

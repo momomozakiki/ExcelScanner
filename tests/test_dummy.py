@@ -1,5 +1,4 @@
 
-
 from excel_scanner import ExcelScanner
 
 from pathlib import Path
@@ -23,7 +22,7 @@ print(read_excel.load_with_pandas())
 keyword = 's/n'
 
 get_info = read_excel.get_cell_info
-keyword_cell = read_excel.get_keyword_cell(keyword, exact_match=False, end_col=14, end_row=None)
+keyword_cell = read_excel.get_keyword_cell(keyword, exact_match=False, end_col=None, end_row=None)
 print(keyword_cell)
 
 for row, col in keyword_cell:
