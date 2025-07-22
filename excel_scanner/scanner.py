@@ -313,6 +313,44 @@ class ExcelScanner:
 
         return common_cols.pop()
 
+    def get_slice_content(
+            self,
+            start_slice_row: Optional[int] = None,
+            end_slice_row: Optional[int] = None,
+            start_slice_col: Optional[int] = None,
+            end_slice_col: Optional[int] = None
+    ) -> pd.DataFrame:
+        """Extract a slice of the Excel content as a pandas DataFrame.
+
+        Args:
+            start_slice_row: First row to include (1-based). None = start from row 1.
+            end_slice_row: Last row to include (1-based). None = end at last data row.
+            start_slice_col: First column to include (1-based). None = start from column 1.
+            end_slice_col: Last column to include (1-based). None = end at last data column.
+
+        Returns:
+            pd.DataFrame: Sliced data preserving original pandas format.
+
+        Example:
+            # Get rows 5-10, all columns
+            df = scanner.get_slice_content(start_slice_row=5, end_slice_row=10)
+
+            # Get all rows, columns 3-5
+            df = scanner.get_slice_content(start_slice_col=3, end_slice_col=5)
+        """
+        if self.df is None:
+            self.load_with_pandas()
+
+        # Convert 1-based to 0-based and handle None values
+        start_row = 0 if start_slice_row is None else start_slice_row - 1
+        end_row = len(self.df) if end_slice_row is None else end_slice_row
+        start_col = 0 if start_slice_col is None else start_slice_col - 1
+        end_col = len(self.df.columns) if end_slice_col is None else end_slice_col
+
+        # Perform slicing (iloc is exclusive on end index)
+        return self.df.iloc[start_row:end_row, start_col:end_col].copy()
+    
+
 ''' V2
     def find_consensus_row(
             self,

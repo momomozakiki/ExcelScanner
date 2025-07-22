@@ -17,9 +17,9 @@ print(read_excel.load_with_pandas())
 
 
 first_row_keywords = {'Product Description', 'Quantity', 'Price ($)'}
-# end_row_keywords = {'E. & O.E.', 'SUB-TOTAL'}
+end_row_keywords = {'E. & O.E.', 'SUB-TOTAL'}
 # end_row_keywords = {'E. & O.E.'}
-end_row_keywords = {'SUB-TOTAL'}
+# end_row_keywords = {'SUB-TOTAL'}
 
 
 inv_col_keywords = {'Price ($)'}
