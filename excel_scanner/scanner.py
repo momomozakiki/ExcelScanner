@@ -107,29 +107,79 @@ class ExcelScanner:
                 self.load_with_openpyxl()
             return self.ws.cell(row=row, column=col).value
 
-    def get_cell_content(self, row: int, col: int, get_formula: bool = False) -> str:
-        """Get cell content as string, with formula handling.
+    def get_cell_content(
+            self,
+            row: Optional[int] = None,  # Fully optional
+            col: Optional[int] = None,  # Fully optional
+            get_formula: bool = False,
+            row_offset: Optional[int] = None,
+            col_offset: Optional[int] = None,
+            debug: bool = False
+    ) -> str:
+        """Get cell content with fully optional positioning and offsets.
 
         Args:
-            row: Row number (1-based).
-            col: Column number (1-based).
-            get_formula: If True, returns formula text. If False, returns value.
+            row: Base row (1-based). None=first row.
+            col: Base column (1-based). None=first column.
+            get_formula: Return formula if True.
+            row_offset: Offset from base row (None=0).
+            col_offset: Offset from base column (None=0).
+            debug: Print calculation steps.
 
         Returns:
-            str: String representation of cell content.
+            str: Cell content or "" if invalid.
 
-        Example:
-            scanner.get_cell_content(1, 1)  # "Value"
-            scanner.get_cell_content(1, 1, get_formula=True)  # "=A2+B2"
+        Raises:
+            ValueError: For negative values or invalid positions.
         """
-        if get_formula:
-            if not hasattr(self, 'ws'):
-                self.load_with_openpyxl()
-            return str(self.ws.cell(row, col).value)
-        else:
+        # Set defaults (1-based)
+        base_row = 1 if row is None else row
+        base_col = 1 if col is None else col
+
+        # Convert None offsets to 0
+        row_offset = 0 if row_offset is None else row_offset
+        col_offset = 0 if col_offset is None else col_offset
+
+        # Validation
+        if base_row <= 0 or base_col <= 0:
+            raise ValueError(f"Base position must be >=1 (got row={base_row}, col={base_col})")
+        if row_offset < 0 or col_offset < 0:
+            raise ValueError(f"Offsets must be >=0 (got row_offset={row_offset}, col_offset={col_offset})")
+
+        try:
             if self.df is None:
                 self.load_with_pandas()
-            return str(self.df.iat[row - 1, col - 1]) if pd.notna(self.df.iat[row - 1, col - 1]) else ""
+
+            target_row = base_row + row_offset
+            target_col = base_col + col_offset
+
+            if debug:
+                print(f"[DEBUG] Base: ({base_row}, {base_col}) | "
+                      f"Offsets: (+{row_offset}, +{col_offset}) -> "
+                      f"Target: ({target_row}, {target_col})")
+
+            # Boundary check
+            if not (1 <= target_row <= self.df.shape[0] and
+                    1 <= target_col <= self.df.shape[1]):
+                if debug:
+                    print(f"[DEBUG] Out of bounds (max {self.df.shape})")
+                return ""
+
+            # Get content
+            if get_formula:
+                if not hasattr(self, 'ws'):
+                    self.load_with_openpyxl()
+                value = self.ws.cell(target_row, target_col).value
+            else:
+                value = self.df.iat[target_row - 1, target_col - 1]
+
+            return str(value) if pd.notna(value) else ""
+
+        except Exception as e:
+            if debug:
+                import traceback
+                print(f"[DEBUG] Error:\n{traceback.format_exc()}")
+            return ""
 
     def get_keyword_cell(
             self,

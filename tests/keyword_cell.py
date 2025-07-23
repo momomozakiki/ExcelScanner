@@ -27,7 +27,7 @@ keyword_cell = read_excel.get_keyword_cell(keyword2, exact_match=False, end_col=
 print(keyword_cell)
 
 for row, col in keyword_cell:
-    content = read_excel.get_cell_content(row, col)
+    content = read_excel.get_cell_content(row=row, col=col, get_formula=False, row_offset=None, col_offset=2, debug=True)
     print(content)
 
 
