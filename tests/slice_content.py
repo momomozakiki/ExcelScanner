@@ -14,5 +14,8 @@ read_excel = ExcelScanner(dummy_invoice)
 
 print(read_excel.load_with_pandas())
 
+header = read_excel.get_slice_content(start_slice_row=None, end_slice_row=17, start_slice_col=None, end_slice_col=14)
+print(header)
+
 content = read_excel.get_slice_content(start_slice_row=18, end_slice_row=57, start_slice_col=None, end_slice_col=14)
 print(content)
