@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "excel-scanner"
+version = "0.1.0"
+description = "Advanced Excel file scanner with Pandas and OpenPyXL integration"
+readme = "README.md"
+authors = [
+    {name = "SIM KEAM BENG", email = "kbsim2004@gmail.com"},
+]
+license = {text = "MIT"}
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Office/Business :: Financial :: Spreadsheet",
+]
+requires-python = ">=3.8"
+dependencies = [
+    "et_xmlfile>=2.0.0",
+    "numpy>=2.3.1",
+    "openpyxl>=3.1.5",
+    "pandas>=2.3.1",
+    "python-dateutil>=2.9.0",
+    "pytz>=2025.2",
+    "six>=1.17.0",
+    "tzdata>=2025.2",
+]
+
+[project.urls]
+Homepage = "https://github.com/momomozakiki/ExcelScanner"
+Documentation = "https://github.com/momomozakiki/ExcelScanner#readme"
+Repository = "https://github.com/momomozakiki/ExcelScanner.git"
+Issues = "https://github.com/momomozakiki/ExcelScanner/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["excel_scanner*"]
+exclude = ["tests*"]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "black>=23.0",
+    "mypy>=1.0",
+    "flake8>=5.0",
+]
