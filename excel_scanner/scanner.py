@@ -21,7 +21,7 @@ class ExcelScanner:
             self.wb (Workbook): OpenPyXL workbook object.
             self.ws (Worksheet): Active worksheet (OpenPyXL mode).
         """
-        self.filepath = str(filepath) # type str will backward compatibility with older python path library
+        self.filepath = str(filepath)  # type str will backward compatibility with older python path library
         self.df = None  # Private with type hint
         self.wb = None
         self.ws = None
@@ -83,30 +83,6 @@ class ExcelScanner:
         if hasattr(self, 'wb') and self.wb:
             self.wb.close()
 
-    def get_cell_info(self, row: int, col: int, use_pandas: bool = True) -> Union[str, float, int]:
-        """Get cell content by row and column (1-based indexing).
-
-        Args:
-            row: Row number (1-based).
-            col: Column number (1-based).
-            use_pandas: If True, uses Pandas (faster). If False, uses OpenPyXL.
-
-        Returns:
-            The cell value (type depends on content - str, float, int, etc.)
-
-        Example:
-            scanner.get_cell_info(1, 1)  # Returns content of A1
-            "Header"
-        """
-        if use_pandas:
-            if not hasattr(self, 'df'):
-                self.load_with_pandas()
-            return self.df.iloc[row - 1, col - 1]
-        else:
-            if not hasattr(self, 'ws'):
-                self.load_with_openpyxl()
-            return self.ws.cell(row=row, column=col).value
-
     def get_cell_content(
             self,
             row: Optional[int] = None,  # Fully optional
@@ -114,20 +90,28 @@ class ExcelScanner:
             get_formula: bool = False,
             row_offset: Optional[int] = None,
             col_offset: Optional[int] = None,
+            return_native_type: bool = False,
+            use_pandas: bool = True,
             debug: bool = False
-    ) -> str:
+    ) -> Union[str, float, int, None]:
         """Get cell content with fully optional positioning and offsets.
 
         Args:
             row: Base row (1-based). None=first row.
             col: Base column (1-based). None=first column.
-            get_formula: Return formula if True.
+            get_formula: Return formula if True (forces OpenPyXL usage).
             row_offset: Offset from base row (None=0).
             col_offset: Offset from base column (None=0).
+            return_native_type: If True, returns original data type (str/float/int/None).
+                               If False, returns string representation.
+            use_pandas: If True, uses Pandas (faster). If False, uses OpenPyXL.
+                       Ignored when get_formula=True.
             debug: Print calculation steps.
 
         Returns:
-            str: Cell content or "" if invalid.
+            Union[str, float, int, None]: Cell content based on return_native_type setting.
+            - return_native_type=False: Always returns str, "" for empty/invalid cells
+            - return_native_type=True: Returns native type (str/float/int) or None for empty
 
         Raises:
             ValueError: For negative values or invalid positions.
@@ -147,9 +131,6 @@ class ExcelScanner:
             raise ValueError(f"Offsets must be >=0 (got row_offset={row_offset}, col_offset={col_offset})")
 
         try:
-            if self.df is None:
-                self.load_with_pandas()
-
             target_row = base_row + row_offset
             target_col = base_col + col_offset
 
@@ -158,28 +139,78 @@ class ExcelScanner:
                       f"Offsets: (+{row_offset}, +{col_offset}) -> "
                       f"Target: ({target_row}, {target_col})")
 
-            # Boundary check
-            if not (1 <= target_row <= self.df.shape[0] and
-                    1 <= target_col <= self.df.shape[1]):
-                if debug:
-                    print(f"[DEBUG] Out of bounds (max {self.df.shape})")
-                return ""
+            # Determine which method to use
+            use_openpyxl = get_formula or not use_pandas
 
-            # Get content
-            if get_formula:
-                if not hasattr(self, 'ws'):
+            if use_openpyxl:
+                # Use OpenPyXL for formulas or when explicitly requested
+                if not hasattr(self, 'ws') or self.ws is None:
                     self.load_with_openpyxl()
-                value = self.ws.cell(target_row, target_col).value
+
+                # OpenPyXL bounds checking
+                max_row = self.ws.max_row
+                max_col = self.ws.max_column
+
+                if not (1 <= target_row <= max_row and 1 <= target_col <= max_col):
+                    if debug:
+                        print(f"[DEBUG] Out of bounds (OpenPyXL max: {max_row}x{max_col})")
+                    return None if return_native_type else ""
+
+                cell = self.ws.cell(row=target_row, column=target_col)
+                value = cell.value
+
             else:
+                # Use Pandas for better performance
+                if self.df is None:
+                    self.load_with_pandas()
+
+                # Pandas bounds checking
+                if not (1 <= target_row <= self.df.shape[0] and
+                        1 <= target_col <= self.df.shape[1]):
+                    if debug:
+                        print(f"[DEBUG] Out of bounds (Pandas max: {self.df.shape})")
+                    return None if return_native_type else ""
+
                 value = self.df.iat[target_row - 1, target_col - 1]
 
-            return str(value) if pd.notna(value) else ""
+            # Handle return type
+            if return_native_type:
+                # Return native type (None for NaN/empty)
+                if pd.isna(value) or value is None:
+                    return None
+                return value
+            else:
+                # Return string representation ("" for empty)
+                if pd.isna(value) or value is None:
+                    return ""
+                return str(value)
 
         except Exception as e:
             if debug:
                 import traceback
                 print(f"[DEBUG] Error:\n{traceback.format_exc()}")
-            return ""
+            return None if return_native_type else ""
+
+    # Optional: Simple wrapper for backward compatibility
+    def get_cell_info(self, row: int, col: int, use_pandas: bool = True) -> Union[str, float, int, None]:
+        """Get cell content by row and column (1-based indexing) - DEPRECATED.
+
+        Use get_cell_content() with return_native_type=True instead.
+
+        Args:
+            row: Row number (1-based).
+            col: Column number (1-based).
+            use_pandas: If True, uses Pandas (faster). If False, uses OpenPyXL.
+
+        Returns:
+            The cell value (type depends on content - str, float, int, None)
+        """
+        return self.get_cell_content(
+            row=row,
+            col=col,
+            return_native_type=True,
+            use_pandas=use_pandas
+        )
 
     def get_keyword_cell(
             self,
@@ -399,8 +430,107 @@ class ExcelScanner:
 
         # Perform slicing (iloc is exclusive on end index)
         return self.df.iloc[start_row:end_row, start_col:end_col].copy()
-    
 
+'''
+    def get_cell_info(self, row: int, col: int, use_pandas: bool = True) -> Union[str, float, int]:
+        """Get cell content by row and column (1-based indexing).
+
+        Args:
+            row: Row number (1-based).
+            col: Column number (1-based).
+            use_pandas: If True, uses Pandas (faster). If False, uses OpenPyXL.
+
+        Returns:
+            The cell value (type depends on content - str, float, int, etc.)
+
+        Example:
+            scanner.get_cell_info(1, 1)  # Returns content of A1
+            "Header"
+        """
+        if use_pandas:
+            if not hasattr(self, 'df'):
+                self.load_with_pandas()
+            return self.df.iloc[row - 1, col - 1]
+        else:
+            if not hasattr(self, 'ws'):
+                self.load_with_openpyxl()
+            return self.ws.cell(row=row, column=col).value
+
+    def get_cell_content(
+            self,
+            row: Optional[int] = None,  # Fully optional
+            col: Optional[int] = None,  # Fully optional
+            get_formula: bool = False,
+            row_offset: Optional[int] = None,
+            col_offset: Optional[int] = None,
+            debug: bool = False
+    ) -> str:
+        """Get cell content with fully optional positioning and offsets.
+
+        Args:
+            row: Base row (1-based). None=first row.
+            col: Base column (1-based). None=first column.
+            get_formula: Return formula if True.
+            row_offset: Offset from base row (None=0).
+            col_offset: Offset from base column (None=0).
+            debug: Print calculation steps.
+
+        Returns:
+            str: Cell content or "" if invalid.
+
+        Raises:
+            ValueError: For negative values or invalid positions.
+        """
+        # Set defaults (1-based)
+        base_row = 1 if row is None else row
+        base_col = 1 if col is None else col
+
+        # Convert None offsets to 0
+        row_offset = 0 if row_offset is None else row_offset
+        col_offset = 0 if col_offset is None else col_offset
+
+        # Validation
+        if base_row <= 0 or base_col <= 0:
+            raise ValueError(f"Base position must be >=1 (got row={base_row}, col={base_col})")
+        if row_offset < 0 or col_offset < 0:
+            raise ValueError(f"Offsets must be >=0 (got row_offset={row_offset}, col_offset={col_offset})")
+
+        try:
+            if self.df is None:
+                self.load_with_pandas()
+
+            target_row = base_row + row_offset
+            target_col = base_col + col_offset
+
+            if debug:
+                print(f"[DEBUG] Base: ({base_row}, {base_col}) | "
+                      f"Offsets: (+{row_offset}, +{col_offset}) -> "
+                      f"Target: ({target_row}, {target_col})")
+
+            # Boundary check
+            if not (1 <= target_row <= self.df.shape[0] and
+                    1 <= target_col <= self.df.shape[1]):
+                if debug:
+                    print(f"[DEBUG] Out of bounds (max {self.df.shape})")
+                return ""
+
+            # Get content
+            if get_formula:
+                if not hasattr(self, 'ws'):
+                    self.load_with_openpyxl()
+                value = self.ws.cell(target_row, target_col).value
+            else:
+                value = self.df.iat[target_row - 1, target_col - 1]
+
+            return str(value) if pd.notna(value) else ""
+
+        except Exception as e:
+            if debug:
+                import traceback
+                print(f"[DEBUG] Error:\n{traceback.format_exc()}")
+            return ""
+
+'''
 ''' V2
     def find_consensus_row(
             self,
@@ -512,8 +642,6 @@ class ExcelScanner:
 
         return common_cols.pop()
 '''
-
-
 
 '''
     def find_consensus_row(
