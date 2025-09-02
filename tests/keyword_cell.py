@@ -19,22 +19,27 @@ read_quotation = ExcelScanner(dummy_quotation)
 print(read_quotation.load_with_pandas())
 
 
-keyword = 's/n'
+# keyword = 's/n'
 keyword2 = 'SUB-TOTAL'
-multi_keyword = 'model'
+multi_keyword = ['product', 'model', 'brand', 'capacity', 's/n']
 
 get_info = read_quotation.get_cell_info
-keyword_cell = read_quotation.get_keyword_cell(multi_keyword, exact_match=False, end_col=14, end_row=None)
-print(keyword_cell)
+# keyword_cell = read_quotation.get_keyword_cell(multi_keyword, exact_match=False, end_col=14, end_row=None)
+# print(keyword_cell)
+content_group = []
 
-for row, col in keyword_cell:
-    ## content = read_excel.get_cell_content(row=row, col=col, get_formula=False, row_offset=None, col_offset=2, debug=True)
-    content = read_quotation.get_cell_content(row=row, col=col, get_formula=False, row_offset=None, col_offset=None, return_native_type=False, use_pandas=True, debug=False )
-    print(content)
+for keywords in multi_keyword:
+    keyword_cell = read_quotation.get_keyword_cell(keywords, exact_match=False, end_col=14, end_row=None)
+    #print(keyword_cell)
+    #content_group.append(keyword_cell)
+    #print(content_group)
 
+    for row, col in keyword_cell:
+        ## content = read_excel.get_cell_content(row=row, col=col, get_formula=False, row_offset=None, col_offset=2, debug=True)
+        content = read_quotation.get_cell_content(row=row, col=col, get_formula=False, row_offset=None, col_offset=None, return_native_type=False, use_pandas=True, debug=False )
+        print(content)
 
 # content = read_excel.get_cell_content(1,5)
-
 
 '''
 keyword = 'B4'
