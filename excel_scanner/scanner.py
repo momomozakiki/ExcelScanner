@@ -2,7 +2,7 @@ import pandas as pd
 from openpyxl import load_workbook
 from .core import normalize_text
 from .exceptions import ExcelScannerError
-from typing import Optional, Union, List, Tuple
+from typing import Optional, Union, List, Tuple, Dict
 from pathlib import Path
 
 
@@ -257,6 +257,138 @@ class ExcelScanner:
 
         rows, cols = matches.to_numpy().nonzero()
         return [(int(row + 1), int(col + 1)) for row, col in zip(rows, cols)]
+
+    def find_keyword_content(
+            self,
+            keywords: List[str],
+            exact_match: bool = True,
+            end_row: Optional[int] = None,
+            end_col: Optional[int] = None,
+            proximity_threshold: int = 3
+    ) -> Dict[str, Tuple[str, ...]]:
+        """Find content associated with multiple keywords and group them logically.
+
+        This function searches for multiple keywords and attempts to group related
+        content together based on proximity in the spreadsheet.
+
+        Args:
+            keywords: List of keywords to search for (e.g., ['product', 'brand', 'model', 'capacity', 's/n'])
+            exact_match: If True, looks for exact matches only. If False, looks for partial matches.
+            end_row: Last row to search (1-based). If None, searches all rows.
+            end_col: Last column to search (1-based). If None, searches all columns.
+            proximity_threshold: Maximum row distance to consider keywords as related (default: 3)
+
+        Returns:
+            Dictionary with 'content' key containing tuples of grouped keyword content.
+
+        Example:
+            scanner.find_keyword_content(['product', 'brand', 'model', 'capacity', 's/n'])
+            {
+                'content': (
+                    ('Product: Digital WaterProof Scale', 'Brand: EXCELL', 'Model: ELW+3K',
+                     'Capacity: 3kg x 0.5g', 'S/No: QT240100001'),
+                    ('Product: Digital Scale', 'Brand: Jadever', 'Model: JWI-2100',
+                     'Capacity: 30kg x 0.02g', 'S/No: QT240112301')
+                )
+            }
+        """
+        if self.df is None:
+            self.load_with_pandas()
+
+        # Dictionary to store all keyword findings
+        keyword_findings = {}
+
+        # Search for each keyword and store results
+        for keyword in keywords:
+            positions = self.get_keyword_cell(keyword, exact_match, end_row, end_col)
+
+            # For each position, get the actual content from nearby cells
+            keyword_content = []
+            for row, col in positions:
+                # Look for content in the same row, next column (common pattern)
+                content_candidates = []
+
+                # Check current cell and adjacent cells for content
+                for c_offset in range(0, 3):  # Check current and next 2 columns
+                    try:
+                        if col + c_offset <= len(self.df.columns):
+                            cell_value = self.df.iloc[row - 1, col + c_offset - 1]
+                            if pd.notna(cell_value) and str(cell_value).strip():
+                                content_candidates.append(str(cell_value).strip())
+                    except (IndexError, KeyError):
+                        continue
+
+                # Also check the cell below (sometimes data is below the header)
+                try:
+                    if row < len(self.df):
+                        cell_value = self.df.iloc[row, col - 1]  # row below, same column
+                        if pd.notna(cell_value) and str(cell_value).strip():
+                            content_candidates.append(str(cell_value).strip())
+                except (IndexError, KeyError):
+                    pass
+
+                # Select the most relevant content (usually the longest non-keyword string)
+                best_content = None
+                for candidate in content_candidates:
+                    if normalize_text(keyword) not in normalize_text(candidate):
+                        if best_content is None or len(candidate) > len(best_content):
+                            best_content = candidate
+
+                if best_content:
+                    keyword_content.append({
+                        'row': row,
+                        'col': col,
+                        'content': f"{keyword.title()}: {best_content}"
+                    })
+
+            keyword_findings[keyword.lower()] = keyword_content
+
+        # Group related keywords by proximity
+        groups = []
+        all_items = []
+
+        # Flatten all keyword findings into a single list
+        for keyword, items in keyword_findings.items():
+            all_items.extend(items)
+
+        # Sort by row position
+        all_items.sort(key=lambda x: (x['row'], x['col']))
+
+        # Group items that are close to each other
+        if all_items:
+            current_group = [all_items[0]]
+
+            for item in all_items[1:]:
+                # If this item is within proximity_threshold rows of the last item in current group
+                if abs(item['row'] - current_group[-1]['row']) <= proximity_threshold:
+                    current_group.append(item)
+                else:
+                    # Start a new group
+                    if current_group:
+                        groups.append(current_group)
+                    current_group = [item]
+
+            # Add the last group
+            if current_group:
+                groups.append(current_group)
+
+        # Format the output
+        content_tuples = []
+        for group in groups:
+            # Remove duplicates within the same group (same keyword appearing multiple times)
+            seen_keywords = set()
+            group_content = []
+
+            for item in group:
+                keyword_type = item['content'].split(':')[0].lower()
+                if keyword_type not in seen_keywords:
+                    group_content.append(item['content'])
+                    seen_keywords.add(keyword_type)
+
+            if group_content:
+                content_tuples.append(tuple(group_content))
+
+        return {'content': tuple(content_tuples)}
 
     def find_consensus_row(
             self,
