@@ -16,19 +16,20 @@ dummy_quotation = DUMMY_FILES_DIR / "ST-2025-03-002_SERVICE(FISCHER BELL PRIVATE
 read_excel = ExcelScanner(dummy_invoice)
 read_quotation = ExcelScanner(dummy_quotation)
 
-print(read_excel.load_with_pandas())
+print(read_quotation.load_with_pandas())
 
 
 keyword = 's/n'
 keyword2 = 'SUB-TOTAL'
+multi_keyword = 'model'
 
-get_info = read_excel.get_cell_info
-keyword_cell = read_excel.get_keyword_cell(keyword2, exact_match=False, end_col=14, end_row=None)
+get_info = read_quotation.get_cell_info
+keyword_cell = read_quotation.get_keyword_cell(multi_keyword, exact_match=False, end_col=14, end_row=None)
 print(keyword_cell)
 
 for row, col in keyword_cell:
     ## content = read_excel.get_cell_content(row=row, col=col, get_formula=False, row_offset=None, col_offset=2, debug=True)
-    content = read_excel.get_cell_content(row=row, col=col, get_formula=False, row_offset=None, col_offset=None, return_native_type=False, use_pandas=True, debug=False )
+    content = read_quotation.get_cell_content(row=row, col=col, get_formula=False, row_offset=None, col_offset=None, return_native_type=False, use_pandas=True, debug=False )
     print(content)
 
 

@@ -12,6 +12,10 @@ dummy_quotation = DUMMY_FILES_DIR / "ST-2025-03-002_SERVICE(FISCHER BELL PRIVATE
 # dummy_info = r"C:\Users\kbsim\Desktop\dummy info.xlsx"
 
 # read_excel = ExcelScanner(dummy_quotation)
-read_excel = ExcelScanner(dummy_invoice)
+read_invoice = ExcelScanner(dummy_invoice)
 read_quotation = ExcelScanner(dummy_quotation)
 
+print(read_invoice.load_with_pandas())
+
+keyword = 's/n'
+keyword2 = 'SUB-TOTAL'
