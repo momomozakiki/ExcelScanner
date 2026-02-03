@@ -6,7 +6,7 @@
 
 ## Pre‑Action Checklist
 - Read this protocol and confirm aidocs folder exists.
-- Read latest notes in fastapi_expert_versioning.md.
+- Read latest notes in fastapi_versioning.md.
 - Verify FastAPI, Pydantic (v2), and SQLAlchemy versions in use via official docs.
 - Identify requested change as a single atomic task with clear outcome.
 

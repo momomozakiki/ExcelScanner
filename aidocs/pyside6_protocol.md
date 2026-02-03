@@ -7,7 +7,7 @@
 
 ## Pre‑Action Checklist
 - Confirm aidocs folder exists and this protocol file is present.
-- Read latest version notes in pyside6_expert_versioning.md.
+- Read latest version notes in pyside6_versioning.md.
 - Verify installed PySide6 version and license (LGPL v3) via official sources.
 - Identify requested change as a single, atomic task with clear outcome.
 

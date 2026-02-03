@@ -7,7 +7,7 @@
 
 ## Pre‑Action Checklist
 - Confirm aidocs folder and this protocol file exist.
-- Read latest version notes in sqlalchemy_expert_versioning.md.
+- Read latest version notes in sqlalchemy_versioning.md.
 - Verify SQLAlchemy and PostgreSQL versions against official docs before using features.
 - Identify requested change as a single, atomic task with a clear outcome.
 

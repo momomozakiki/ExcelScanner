@@ -1,6 +1,6 @@
 ## Universal AI Agent Protocol (Framework-Agnostic)
 ### Critical Rules
-- Name–File alignment: `{agent_name}_expert_protocol.md`, `{agent_name}_expert_versioning.md`
+- Name–File alignment: `{agent_name}_protocol.md`, `{agent_name}_versioning.md`
 - Single aidocs folder at project root
 - Read agent protocol before action
 - Anti-hallucination: no invented APIs/features; verify against official docs
@@ -11,7 +11,7 @@
 | **Anti-Hallucination** | NEVER invent APIs/features — verify against official docs BEFORE output | `grep -r "non_existent_method" output/` must return 0 matches |
 | **Expertise Boundary** | Work ONLY within documented expertise — never cross into other domains | Static analysis: `grep "import.*sqlalchemy" frontend_agent_output/` must return 0 |
 | **Modular Core Functions** | Expose ≤3 atomic verbs per layer (e.g., `get`/`save`/`delete`) — NO monolithic functions | Cyclomatic complexity ≤5 per function (measured by `radon cc`) |
-| **Protocol Compliance** | ALWAYS read `{expertise}_expert_protocol.md` from `{project_root}/aidocs` BEFORE acting | File existence check: `test -f aidocs/{agent}_expert_protocol.md` |
+| **Protocol Compliance** | ALWAYS read `{expertise}_protocol.md` from `{project_root}/aidocs` BEFORE acting | File existence check: `test -f aidocs/{agent}_protocol.md` |
 | **User Approval Gate** | NEVER modify protocols without explicit user approval | Versioning file timestamp must be AFTER user approval message |
 
 ### Aidocs Folder Structure (MANDATORY)
@@ -19,12 +19,12 @@
 ```
 {project_root}/
 └── aidocs/ # single folder at project root
-    ├── {agent_name}_expert_protocol.md
-    └── {agent_name}_expert_versioning.md
+    ├── {agent_name}_protocol.md
+    └── {agent_name}_versioning.md
   
 **Name–File Alignment Rule**
 - Filenames MUST match the agent name exactly
-- Library-specific names allowed (e.g., `sqlalchemy expert` → `sqlalchemy_expert_protocol.md`)
+- Library-specific names allowed (e.g., `sqlalchemy` → `sqlalchemy_protocol.md`)
 - If a mismatch is detected, rename files to match the agent name
 ```
 
@@ -32,18 +32,18 @@
 ```bash
 [ -d aidocs ] || exit 1
 [ $(find . -type d -name aidocs | wc -l) -eq 1 ] || exit 1
-[ -f "aidocs/${AGENT_NAME}_expert_protocol.md" ] || exit 1
+[ -f "aidocs/${AGENT_NAME}_protocol.md" ] || exit 1
 ```
 
 ### Versioning Format Specification (Optimized for Revertability)
 ```markdown
-# {agent_name}_expert_versioning.md
+# {agent_name}_versioning.md
 
 ## LATEST (Top = Current Version)
 v3.0.1 | 2026-02-03 | PySide6 v6.5.0 compatibility
   • Changed: QThread usage pattern per Qt 6.5 deprecation warnings
   • Reason: Official Qt docs section 4.2.1 marks old pattern obsolete
-  • Revert command: `git checkout v3.0.0 -- aidocs/pyside6_expert_protocol.md`
+  • Revert command: `git checkout v3.0.0 -- aidocs/pyside6_protocol.md`
 
 v3.0.0 | 2026-02-01 | New protocol foundation
   • Added: Anti-hallucination rule #4 (type-check all interfaces)
@@ -62,7 +62,7 @@ v2.1.0 | 2026-01-15 | Security hardening
 #### When to Communicate:
 | Scenario | Action | Communication Method |
 |----------|--------|----------------------|
-| Need expertise outside domain | Request help via structured JSON | `{"request": "radix_ui_expert", "task": "custom_calendar_component", "constraints": ["accessibility:WCAG_2.1", "theme:dark_mode"]}` |
+65→| Need expertise outside domain | Request help via structured JSON | `{"request": "radix_ui", "task": "custom_calendar_component", "constraints": ["accessibility:WCAG_2.1", "theme:dark_mode"]}` |
 | Protocol conflict detected | Flag inconsistency to user | `{"alert": "protocol_conflict", "agent1": "frontend", "agent2": "backend", "issue": "date_format_mismatch"}` |
 | Security boundary violation | Block action + notify security agent | `{"security_alert": "orm_direct_access", "source": "frontend_agent", "target": "database_layer"}` |
 
@@ -114,15 +114,15 @@ v2.1.0 | 2026-01-15 | Security hardening
 
 | Requirement | Rule | Examples |
 |-------------|------|----------|
-| Length | ≤20 characters INCLUDING spaces | ✅ `frontend expert` (16 chars)<br/>❌ `nextjs_tailwind_radix_ui_specialist` (38 chars) |
-| Clarity | Describes expertise domain ONLY | ✅ `database expert`<br/>❌ `super_db_wizard_2026` |
-| Uniqueness | No overlap with other agents | ✅ `auth expert` + `payment expert`<br/>❌ `backend expert` (too broad — overlaps with auth/payment) |
+| Length | ≤20 characters INCLUDING spaces | ✅ `frontend` (8 chars)<br/>❌ `nextjs_tailwind_radix_ui_specialist` (38 chars) |
+| Clarity | Describes expertise domain ONLY | ✅ `database`<br/>❌ `super_db_wizard_2026` |
+| Uniqueness | No overlap with other agents | ✅ `auth` + `payment`<br/>❌ `backend` (too broad — overlaps with auth/payment) |
 
 **Valid Names**:
-- frontend expert
-- backend expert
-- database expert
-- auth expert
+- frontend
+- backend
+- database
+- auth
 - ui components
 
 ### Protocol Update Workflow (MANDATORY)
@@ -132,9 +132,23 @@ v2.1.0 | 2026-01-15 | Security hardening
 **Critical Rule**: 
 > AI agent MUST NEVER auto-update protocols — user approval required for ALL changes.
 
+### Git Backup & Update Strategy
+
+**Purpose**: Ensure files are up-to-date and reversible in case of total breakdown.
+
+**Update Triggers:**
+1.  **Critical Updates**: Update IMMEDIATELY when any critical update occurs.
+2.  **Minor Updates**: Update after accumulating a few minor updates.
+
+**Pre-Update Validation**:
+- ✅ Verify everything is working properly before updating.
+
+**User Decision Rule**:
+> "Let the user decide to run the update or continue to work. Never auto-push without confirmation."
+
 ### Complete Agent Workflow (Per Task)
 
-1) Pre-check: `[ -d aidocs ] && [ -f aidocs/${AGENT}_expert_protocol.md ]`
+1) Pre-check: `[ -d aidocs ] && [ -f aidocs/${AGENT}_protocol.md ]`
 2) Read protocol: allowed/forbidden/security
 3) Run AH-1..AH-5
 4) Check modularity (≤1 responsibility)
