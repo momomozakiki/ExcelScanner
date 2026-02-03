@@ -44,6 +44,9 @@ docs/_build/
 
 # Exclude README.md in git .ignore
 !README.md
+# Allow tracking of aidocs markdown documents
+!aidocs/*.md
+!aidocs/**/*.md
 
 
 # Coverage reports
