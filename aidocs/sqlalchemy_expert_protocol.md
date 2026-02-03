@@ -1,4 +1,4 @@
-# Database Expert Protocol (SQLAlchemy + PostgreSQL)
+# SQLAlchemy Expert Protocol (PostgreSQL)
 
 ## Purpose
 - Define strict, verifiable rules for the database layer using SQLAlchemy ORM with PostgreSQL.
@@ -7,7 +7,7 @@
 
 ## Pre‑Action Checklist
 - Confirm aidocs folder and this protocol file exist.
-- Read latest version notes in database_expert_versioning.md.
+- Read latest version notes in sqlalchemy_expert_versioning.md.
 - Verify SQLAlchemy and PostgreSQL versions against official docs before using features.
 - Identify requested change as a single, atomic task with a clear outcome.
 
@@ -51,4 +51,3 @@
 ## Protocol Compliance
 - Never modify this protocol without explicit user approval.
 - Flag conflicts with other agent protocols to the user.
-

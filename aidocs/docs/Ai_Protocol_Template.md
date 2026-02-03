@@ -1,4 +1,10 @@
 ## Universal AI Agent Protocol (Framework-Agnostic)
+### Critical Rules
+- Name–File alignment: `{agent_name}_expert_protocol.md`, `{agent_name}_expert_versioning.md`
+- Single aidocs folder at project root
+- Read agent protocol before action
+- Anti-hallucination: no invented APIs/features; verify against official docs
+- User approval required for protocol changes
 ### Core Principles (Apply to ALL AI Agents)
 | Principle | Concrete Rule | Verification Method |
 |-----------|---------------|---------------------|
@@ -12,35 +18,21 @@
 
 ```
 {project_root}/
-└── aidocs/                          # ONE AND ONLY ONE aidocs folder at project root
-    ├── frontend_expert_protocol.md
-    ├── frontend_expert_versioning.md
-    ├── backend_expert_protocol.md
-    ├── backend_expert_versioning.md
-    ├── database_expert_protocol.md
-    └── database_expert_versioning.md
+└── aidocs/ # single folder at project root
+    ├── {agent_name}_expert_protocol.md
+    └── {agent_name}_expert_versioning.md
+  
+**Name–File Alignment Rule**
+- Filenames MUST match the agent name exactly
+- Library-specific names allowed (e.g., `sqlalchemy expert` → `sqlalchemy_expert_protocol.md`)
+- If a mismatch is detected, rename files to match the agent name
 ```
 
 **Critical Enforcement Rules**:
 ```bash
-# BEFORE any action, AI agent MUST:
-if [ ! -d "aidocs" ]; then
-  echo "ERROR: aidocs folder missing at project root" >&2
-  exit 1
-fi
-
-# Verify EXACTLY ONE aidocs folder exists:
-if [ $(find . -type d -name "aidocs" | wc -l) -ne 1 ]; then
-  echo "ERROR: Multiple aidocs folders detected — violates protocol" >&2
-  exit 1
-fi
-
-# Read agent-specific protocol:
-AGENT_PROTOCOL="aidocs/${AGENT_NAME}_expert_protocol.md"
-if [ ! -f "$AGENT_PROTOCOL" ]; then
-  echo "ERROR: Missing protocol file: $AGENT_PROTOCOL" >&2
-  exit 1
-fi
+[ -d aidocs ] || exit 1
+[ $(find . -type d -name aidocs | wc -l) -eq 1 ] || exit 1
+[ -f "aidocs/${AGENT_NAME}_expert_protocol.md" ] || exit 1
 ```
 
 ### Versioning Format Specification (Optimized for Revertability)
@@ -64,11 +56,7 @@ v2.1.0 | 2026-01-15 | Security hardening
   • Revert command: `git checkout v2.0.0 -- src/auth/token_manager.py`
 ```
 
-**Why This Format Wins**:
-- Top = Current — find latest changes quickly
-- Revert command included — easy rollback
-- Machine-readable — `grep "^v" versioning.md \| head -1` finds current
-- Incident-linked — changes tied to real events
+**Why This Format Wins**: Top=current; includes revert cmd; machine-readable; incident-linked.
 ### Inter-Agent Communication Protocol
 
 #### When to Communicate:
@@ -93,13 +81,10 @@ v2.1.0 | 2026-01-15 | Security hardening
   }
 }
 
-# ❌ WRONG: Unstructured natural language
-"Hey can you make a modal that's accessible?"
+# (avoid unstructured natural language)
 ```
 
 ### Universal Anti-Hallucination Enforcement Checklist
-
-**Every AI agent MUST pass these checks BEFORE output**:
 
 | Check # | Rule | Verification Command | Fail Action |
 |---------|------|----------------------|-------------|
@@ -114,31 +99,13 @@ v2.1.0 | 2026-01-15 | Security hardening
 ### Modular Code Creation Protocol
 
 #### Core Function Rules:
-```typescript
-// ✅ CORRECT: Atomic core function (reusable)
-function formatDate(date: Date, format: 'iso' | 'human'): string {
-  // ONE responsibility: date formatting
-}
-
-// ❌ WRONG: Monolithic function (not reusable)
-function processOrderAndNotifyUserAndLogAnalytics(order: Order) {
-  // 3 responsibilities — violates modularity
-}
-```
+- Atomic functions only; one responsibility
+- Avoid monolithic functions (split when “and” appears)
 
 #### Composition Pattern:
-```
-Level 1: Core Functions (atomic verbs)
-  • formatDate()
-  • validateEmail()
-  • hashPassword()
-
-Level 2: Domain Functions (compose Level 1)
-  • createUser() = validateEmail() + hashPassword() + saveUser()
-
-Level 3: Workflow Functions (compose Level 2)
-  • onboardUser() = createUser() + sendWelcomeEmail() + assignOnboardingTask()
-```
+- Level 1: formatDate, validateEmail, hashPassword
+- Level 2: createUser = validateEmail + hashPassword + saveUser
+- Level 3: onboardUser = createUser + sendWelcomeEmail + assignOnboardingTask
 
 **Golden Rule**: 
 > "If a function does >1 distinct thing (separated by 'and' in description), split it."
@@ -152,57 +119,28 @@ Level 3: Workflow Functions (compose Level 2)
 | Uniqueness | No overlap with other agents | ✅ `auth expert` + `payment expert`<br/>❌ `backend expert` (too broad — overlaps with auth/payment) |
 
 **Valid Names**:
-- `frontend expert` (16)
-- `backend expert` (14)
-- `database expert` (16)
-- `auth expert` (11)
-- `ui components` (13)
+- frontend expert
+- backend expert
+- database expert
+- auth expert
+- ui components
 
 ### Protocol Update Workflow (MANDATORY)
 
-```mermaid
-flowchart TD
-    A[AI Agent detects protocol issue] --> B{Is change critical?}
-    B -->|Yes| C[Alert user: “Protocol conflict detected”]
-    B -->|No| D[Log issue for next review]
-    C --> E[User approves change?]
-    E -->|No| F[Continue with current protocol]
-    E -->|Yes| G[Update protocol.md]
-    G --> H[Append to versioning.md<br/>TOP = latest change]
-    H --> I[Commit with tag: protocol/{agent}/vX.Y.Z]
-    I --> J[Notify dependent agents]
-```
+1) Detect issue → 2) Decide critical → 3) Alert user → 4) If approved: update protocol + append versioning (Top=current) → 5) Tag commit → 6) Notify dependents
 
 **Critical Rule**: 
 > AI agent MUST NEVER auto-update protocols — user approval required for ALL changes.
 
 ### Complete Agent Workflow (Per Task)
 
-1. **Pre-Action Check**  
-   ```bash
-   [ -d "aidocs" ] && [ -f "aidocs/${AGENT}_expert_protocol.md" ]
-   ```
-
-2. **Read Protocol**  
-   Parse `protocol.md` for:  
-   - ✅ Allowed actions  
-   - ❌ Forbidden actions  
-   - 🔒 Security boundaries  
-
-3. **Anti-Hallucination Scan**  
-   Run AH-1 through AH-5 checks on proposed output  
-
-4. **Modularity Check**  
-   Verify function has ≤1 responsibility (no "and" in description)  
-
-5. **Boundary Check**  
-   Confirm no cross-expertise imports/calls  
-
-6. **Output**  
-   Only if ALL checks pass → deliver concise, minimal solution  
-
-7. **Protocol Conflict?**  
-   If detected → halt + alert user (never auto-fix)  
+1) Pre-check: `[ -d aidocs ] && [ -f aidocs/${AGENT}_expert_protocol.md ]`
+2) Read protocol: allowed/forbidden/security
+3) Run AH-1..AH-5
+4) Check modularity (≤1 responsibility)
+5) Boundary check (no cross-domain imports)
+6) Output only if all pass
+7) Conflict → halt + alert user
 
 ### Framework-Agnostic Examples
 
@@ -224,12 +162,6 @@ flowchart TD
 | Modularity (≤1 responsibility) | Cyclomatic complexity ≤5 + "and" scan | Function rejected |
 | User approval for protocol changes | Git commit requires user-signed tag | Change blocked |
 
-**This protocol works for ANY stack**: 
-- Next.js/Tailwind/Radix UI 
-- FastAPI/SQLAlchemy 
-- PySide6 
-- SvelteKit/Prisma 
-- Flutter/Dart 
-- ...or any future framework
+**Works for any stack**: Next.js/Tailwind/Radix UI, FastAPI/SQLAlchemy, PySide6, SvelteKit/Prisma, Flutter/Dart, others
 
 > **Golden Rule**: "If it can't be verified against official documentation, it doesn't exist." — Hallucination prevention is non-negotiable.
