@@ -35,28 +35,41 @@
 [ -f "aidocs/${AGENT_NAME}_protocol.md" ] || exit 1
 ```
 
-### Versioning Format Specification (Optimized for Revertability)
+### Versioning File Format (*_versioning.md) — Optimized for Revert Safety
 ```markdown
-# {agent_name}_versioning.md
+# [AGENT_NAME] Version History
 
-## LATEST (Top = Current Version)
-v3.0.1 | 2026-02-03 | PySide6 v6.5.0 compatibility
-  • Changed: QThread usage pattern per Qt 6.5 deprecation warnings
-  • Reason: Official Qt docs section 4.2.1 marks old pattern obsolete
-  • Revert command: `git checkout v3.0.0 -- aidocs/pyside6_protocol.md`
+## LATEST → OLDEST (reverse chronological)
 
-v3.0.0 | 2026-02-01 | New protocol foundation
-  • Added: Anti-hallucination rule #4 (type-check all interfaces)
-  • Reason: Production incident #2026-01-15 (type mismatch caused data loss)
-  • Revert command: `git revert --no-commit v2.1.0..v3.0.0`
+### v3.1.2 | 2026-02-03
+**CHANGE**: Added Radix UI theming support 
+**REASON**: Project migrated from custom components to Radix UI (PR #45) 
+**FILES AFFECTED**:
+- `src/components/ui/` (new)
+- `tailwind.config.js` (updated) 
+**REVERT COMMAND**: `git revert -m 1 abc123` 
+**TEST VALIDATION**: `npm test -- --grep="theming"`
 
-v2.1.0 | 2026-01-15 | Security hardening
-  • Changed: Token storage from localStorage → OS keychain
-  • Reason: OWASP Mobile Top 10 M2: Insecure Data Storage
-  • Revert command: `git checkout v2.0.0 -- src/auth/token_manager.py`
+### v3.1.1 | 2026-01-28
+**CHANGE**: Fixed SQL injection in user search (OWASP A1:2021) 
+**REASON**: Security audit finding #SEC-2026-001 
+**FILES AFFECTED**:
+- `backend/services/user_service.py` 
+**REVERT COMMAND**: `git revert def456` 
+**TEST VALIDATION**: `pytest tests/security/test_sql_injection.py`
+
+### v3.1.0 | 2026-01-15
+**CHANGE**: Initial protocol baseline 
+**REASON**: Project kickoff 
+**FILES AFFECTED**: N/A (protocol creation) 
+**REVERT COMMAND**: N/A 
+**TEST VALIDATION**: N/A
 ```
 
-**Why This Format Wins**: Top=current; includes revert cmd; machine-readable; incident-linked.
+> ✅ *Why this format works*: 
+> - *Revert-ready*: Every change includes exact Git command for rollback 
+> - *Audit-friendly*: Clear linkage between change reason → affected files → validation test 
+> - *Human + machine readable*: Structured enough for tooling, readable for humans
 ### Inter-Agent Communication Protocol
 
 #### When to Communicate:
